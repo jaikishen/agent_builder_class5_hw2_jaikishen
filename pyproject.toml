@@ -1,0 +1,11 @@
+[project]
+name = "agent-builder-class5-hw2-jaikishen"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "psycopg[binary]>=3.3.4",
+    "pymongo>=4.17.0",
+    "python-dotenv>=1.2.2",
+    "supabase>=2.30.0",
+]

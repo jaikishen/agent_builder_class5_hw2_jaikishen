@@ -19,6 +19,9 @@ export const handlers = [
       answer: `echo: ${body?.message ?? ''}`,
     })
   }),
+  // Default /health handler so App tests that mount the whole shell don't
+  // explode on the HealthFooter's auto-fetch. Individual tests override.
+  http.get('*/health', () => HttpResponse.json({ ok: true })),
 ]
 
 export const server = setupServer(...handlers)

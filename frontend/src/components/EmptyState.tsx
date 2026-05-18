@@ -3,30 +3,33 @@ export interface EmptyStateProps {
 }
 
 const EXAMPLE_QUESTIONS: string[] = [
+  'Customer 3 complained about flight SN401. What is our delay compensation policy, what did they actually fly, and what is the ticket status?',
+  'For SN301, who was affected, what is our cancellation policy, and what did the affected passengers say?',
+  'How much has Aarav Mehta spent with us this year, what tier is he, and what miles bonus should his Business class trip have earned per the program?',
+  'Which flights had the lowest average ratings recently, and what did passengers complain about?',
   'How many Platinum customers do we have?',
   'List all open support tickets.',
   'What is our pet travel policy?',
-  'For SN301, who was affected, what is our cancellation policy, and what did the affected passengers say?',
 ]
 
 export function EmptyState({ onPick }: EmptyStateProps) {
   return (
-    <div className="space-y-3">
-      <div className="text-center text-sm text-muted">
-        Try one of these to see the agent route across tools:
-      </div>
-      <div className="flex flex-wrap justify-center gap-2">
-        {EXAMPLE_QUESTIONS.map((q) => (
+    <ul className="space-y-3 text-[13px] leading-snug text-[var(--color-text-soft)]">
+      {EXAMPLE_QUESTIONS.map((q) => (
+        <li key={q} className="flex gap-2.5">
+          <span
+            aria-hidden
+            className="mt-[7px] h-[5px] w-[5px] shrink-0 rounded-full bg-[var(--color-brand)]/60"
+          />
           <button
-            key={q}
             type="button"
             onClick={() => onPick(q)}
-            className="rounded-full border border-white/10 bg-surface px-3 py-1.5 text-sm text-text hover:border-brand/60 hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand/40"
+            className="line-clamp-3 text-left transition hover:text-[var(--color-text)] hover:decoration-[var(--color-brand)] hover:underline hover:underline-offset-2 focus:outline-none focus-visible:text-[var(--color-text)] focus-visible:underline focus-visible:decoration-[var(--color-brand)] focus-visible:underline-offset-2"
           >
             {q}
           </button>
-        ))}
-      </div>
-    </div>
+        </li>
+      ))}
+    </ul>
   )
 }

@@ -8,32 +8,49 @@ export interface AnswerDisplayProps {
 
 const components: Components = {
   h1: ({ children }) => (
-    <h1 className="text-2xl font-semibold tracking-tight text-brand">
+    <h1 className="font-display text-[26px] font-normal leading-tight tracking-tight text-brand">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="mt-4 text-xl font-semibold tracking-tight text-brand">
+    <h2 className="mt-5 font-display text-[21px] font-normal leading-tight tracking-tight text-brand">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="mt-3 text-lg font-semibold text-brand">{children}</h3>
+    <h3 className="mt-4 font-display text-[17px] font-medium tracking-tight text-brand">
+      {children}
+    </h3>
   ),
   p: ({ children }) => (
-    <p className="my-2 leading-relaxed text-text">{children}</p>
+    <p className="my-2 text-[14.5px] leading-relaxed text-[var(--color-text)]">
+      {children}
+    </p>
   ),
   ul: ({ children }) => (
-    <ul className="my-2 list-disc pl-6 marker:text-muted">{children}</ul>
+    <ul className="my-2 list-none space-y-2 pl-0">{children}</ul>
   ),
   ol: ({ children }) => (
-    <ol className="my-2 list-decimal pl-6 marker:text-muted">{children}</ol>
+    <ol className="my-2 list-decimal space-y-1 pl-6 marker:font-mono marker:text-[var(--color-muted)]">
+      {children}
+    </ol>
   ),
-  li: ({ children }) => <li className="my-1">{children}</li>,
+  li: ({ children }) => (
+    <li className="flex gap-3 text-[14.5px] leading-relaxed text-[var(--color-text)]">
+      <span className="mt-2 h-[5px] w-[5px] shrink-0 rounded-full bg-[var(--color-brand)]" />
+      <span className="flex-1">{children}</span>
+    </li>
+  ),
+  strong: ({ children }) => (
+    <strong className="font-semibold text-[var(--color-text)]">{children}</strong>
+  ),
+  em: ({ children }) => (
+    <em className="font-display italic text-[var(--color-text)]">{children}</em>
+  ),
   a: ({ href, children }) => (
     <a
       href={href}
-      className="text-brand underline underline-offset-2 hover:opacity-80"
+      className="text-brand underline underline-offset-2 decoration-[var(--color-brand)]/40 hover:decoration-[var(--color-brand)]"
       target="_blank"
       rel="noreferrer"
     >
@@ -41,8 +58,6 @@ const components: Components = {
     </a>
   ),
   code: ({ className, children, ...rest }) => {
-    // Fenced blocks come through with className="language-..."; inline
-    // backticks have no className. Style the chip; leave the block to <pre>.
     if (className) {
       return (
         <code className={className} {...rest}>
@@ -52,7 +67,7 @@ const components: Components = {
     }
     return (
       <code
-        className="rounded bg-surface px-1 py-0.5 font-mono text-sm text-text"
+        className="rounded border border-[var(--color-line)] bg-surface px-1.5 py-0.5 font-mono text-[12.5px] text-[var(--color-text)]"
         {...rest}
       >
         {children}
@@ -60,30 +75,42 @@ const components: Components = {
     )
   },
   pre: ({ children }) => (
-    <pre className="my-3 overflow-x-auto rounded-md border border-white/10 bg-surface p-3 font-mono text-sm">
+    <pre className="my-3 overflow-x-auto rounded-md border border-[var(--color-line)] bg-surface p-3 font-mono text-[12.5px] leading-relaxed text-[var(--color-text)]">
       {children}
     </pre>
   ),
+  blockquote: ({ children }) => (
+    <blockquote className="my-3 border-l-2 border-[var(--color-brand)] pl-4 font-display text-[15px] italic text-[var(--color-text-soft)]">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="my-5 border-[var(--color-line)]" />,
   table: ({ children }) => (
-    <div className="my-3 overflow-x-auto">
-      <table className="w-full border-collapse text-sm">{children}</table>
+    <div className="my-3 overflow-x-auto rounded-md border border-[var(--color-line)]">
+      <table className="w-full border-collapse text-[13.5px]">{children}</table>
     </div>
   ),
   thead: ({ children }) => (
-    <thead className="bg-surface text-left">{children}</thead>
+    <thead className="bg-[var(--color-surface)] text-left">{children}</thead>
   ),
   th: ({ children }) => (
-    <th className="border border-white/10 px-3 py-1 font-semibold">{children}</th>
+    <th className="border-b border-[var(--color-line)] px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
+      {children}
+    </th>
   ),
   td: ({ children }) => (
-    <td className="border border-white/10 px-3 py-1">{children}</td>
+    <td className="border-b border-[var(--color-line)] px-3 py-2 text-[var(--color-text)] last:border-b-0">
+      {children}
+    </td>
   ),
 }
 
 export function AnswerDisplay({ markdown }: AnswerDisplayProps) {
   return (
-    <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-      {markdown}
-    </ReactMarkdown>
+    <div className="font-sans">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {markdown}
+      </ReactMarkdown>
+    </div>
   )
 }

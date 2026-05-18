@@ -1,15 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #3ecf8e;
-  --color-bg: #1c1c1c;
+  /* Supabase-flavored dark palette — the original theme, kept. */
+  --color-bg: #1a1a1a;
+  --color-bg-soft: #1f1f1f;
   --color-surface: #232323;
-  --color-text: #ededed;
-  --color-muted: #9a9a9a;
-  --color-border: rgba(255, 255, 255, 0.08);
+  --color-surface-warm: #2a2a2a;
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-text: #ededed;
+  --color-text-soft: #c2c2c2;
+  --color-muted: #8a8a8a;
+
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-soft: rgba(255, 255, 255, 0.04);
+
+  /* The Supabase green — used for emphasis, the send button, the chart in
+     the logo, italic emphasis in headlines, the connected dot. */
+  --color-brand: #3ecf8e;
+  --color-brand-soft: #2eb87a;
+  --color-brand-dim: rgba(62, 207, 142, 0.12);
+
+  /* Typography — kept editorial. Serif display with italic for emphasis,
+     a grotesque body with personality, monospace for eyebrows and kbds. */
+  --font-display: "Fraunces", "Times New Roman", Georgia, serif;
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  --default-font-family: var(--font-sans);
+  --default-mono-font-family: var(--font-mono);
 }
 
 html, body, #root {
@@ -23,4 +41,56 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Soft radial glow behind the page — barely visible, gives depth. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(
+      circle at 18% -10%,
+      rgba(62, 207, 142, 0.06),
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 85% 110%,
+      rgba(62, 207, 142, 0.04),
+      transparent 50%
+    );
+}
+
+/* Eyebrow — small caps mono, used as section labels. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+/* One staggered fade-up animation for page-load reveals. */
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 600ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+/* Custom selection — readable on dark, branded. */
+::selection {
+  background: var(--color-brand-dim);
+  color: var(--color-text);
 }

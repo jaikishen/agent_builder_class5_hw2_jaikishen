@@ -21,21 +21,28 @@ export function HealthFooter() {
     }
   }, [])
 
-  const { dotClass, label } = (() => {
+  const { dotStyle, label } = (() => {
     switch (status) {
       case 'ok':
-        return { dotClass: 'bg-brand', label: 'Connected' }
+        return { dotStyle: 'bg-[var(--color-brand)]', label: 'Connected' }
       case 'offline':
-        return { dotClass: 'bg-red-500', label: 'Backend offline' }
+        return { dotStyle: 'bg-red-500', label: 'Backend offline' }
       default:
-        return { dotClass: 'bg-muted', label: 'Checking…' }
+        return { dotStyle: 'bg-[var(--color-muted)]', label: 'Checking…' }
     }
   })()
 
   return (
-    <footer className="mt-8 flex items-center justify-center gap-2 text-xs text-muted">
-      <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`} aria-hidden />
+    <div className="flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-wider text-[var(--color-muted)]">
+      <span
+        className={`relative inline-block h-1.5 w-1.5 rounded-full ${dotStyle}`}
+        aria-hidden
+      >
+        {status === 'ok' && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-[var(--color-brand)] opacity-50" />
+        )}
+      </span>
       <span>{label}</span>
-    </footer>
+    </div>
   )
 }

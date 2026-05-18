@@ -5,10 +5,12 @@ export function LoadingSpinner() {
     <div
       role="status"
       aria-busy="true"
-      className="flex items-center justify-center gap-2 py-6 text-muted"
+      className="flex items-center justify-center gap-3 py-12 fade-up"
     >
-      <Loader2 size={20} className="animate-spin text-brand" />
-      <span className="text-sm">Thinking…</span>
+      <Loader2 size={18} className="animate-spin text-[var(--color-brand)]" />
+      <span className="font-display text-[15px] italic text-[var(--color-text-soft)]">
+        Thinking…
+      </span>
     </div>
   )
 }

@@ -32,15 +32,15 @@ function previewFor(call: ToolCall): string {
   const input = call.input ?? {}
   switch (call.tool) {
     case 'sql_query':
-      return truncate(String((input as { sql?: unknown }).sql ?? ''), 80)
+      return truncate(String((input as { sql?: unknown }).sql ?? ''), 90)
     case 'mongo_query': {
       const i = input as { collection?: string; operation?: string }
       return `${i.collection ?? ''} · ${i.operation ?? ''}`
     }
     case 'handbook_search':
-      return truncate(String((input as { query?: unknown }).query ?? ''), 80)
+      return truncate(String((input as { query?: unknown }).query ?? ''), 90)
     default:
-      return truncate(JSON.stringify(input), 80)
+      return truncate(JSON.stringify(input), 90)
   }
 }
 
@@ -52,39 +52,48 @@ function formatElapsed(elapsedMs: number): string {
   return `${(elapsedMs / 1000).toFixed(1)}s`
 }
 
-function ToolCard({ call }: { call: ToolCall }) {
+function ToolCard({ call, index }: { call: ToolCall; index: number }) {
   const [open, setOpen] = useState(false)
   const Icon = iconFor(call.tool)
   const Chevron = open ? ChevronDown : ChevronRight
 
   return (
-    <div className="rounded-md border border-white/10 bg-surface/40">
+    <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface)] transition hover:border-[var(--color-brand)]/40">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-3 px-3 py-2 text-left font-mono text-sm hover:bg-surface/60"
+        className="flex w-full items-center gap-3 px-4 py-2.5 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)]/30"
       >
-        <Chevron size={14} className="shrink-0 text-muted" />
-        <Icon size={16} className="shrink-0 text-brand" />
-        <span className="shrink-0 font-semibold text-text">{call.tool}</span>
-        <span className="truncate text-muted">— {previewFor(call)}</span>
+        <Chevron size={14} className="shrink-0 text-[var(--color-muted)]" />
+
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--color-bg-soft)]">
+          <Icon size={13} className="text-[var(--color-brand)]" />
+        </span>
+
+        <span className="font-mono text-[10px] tabular-nums tracking-wider text-[var(--color-muted)]">
+          {String(index + 1).padStart(2, '0')}
+        </span>
+
+        <span className="font-mono text-[12.5px] font-medium text-[var(--color-text)]">
+          {call.tool}
+        </span>
+
+        <span className="truncate text-[13px] text-[var(--color-text-soft)]">
+          — {previewFor(call)}
+        </span>
       </button>
 
       {open && (
-        <div className="space-y-2 border-t border-white/10 px-3 py-3">
+        <div className="space-y-3 border-t border-[var(--color-line)] px-4 py-3">
           <div>
-            <div className="mb-1 text-xs uppercase tracking-wide text-muted">
-              input
-            </div>
-            <pre className="overflow-x-auto rounded bg-surface p-2 font-mono text-xs text-text">
+            <div className="eyebrow mb-1.5">input</div>
+            <pre className="overflow-x-auto rounded bg-[var(--color-bg-soft)] p-2.5 font-mono text-[12px] leading-relaxed text-[var(--color-text)]">
               {JSON.stringify(call.input, null, 2)}
             </pre>
           </div>
           <div>
-            <div className="mb-1 text-xs uppercase tracking-wide text-muted">
-              output_preview
-            </div>
-            <pre className="overflow-x-auto rounded bg-surface p-2 font-mono text-xs text-text">
+            <div className="eyebrow mb-1.5">output preview</div>
+            <pre className="overflow-x-auto rounded bg-[var(--color-bg-soft)] p-2.5 font-mono text-[12px] leading-relaxed text-[var(--color-text)]">
               {call.output_preview}
             </pre>
           </div>
@@ -109,10 +118,10 @@ export function ToolCallTrace({ toolCalls, warnings, elapsedMs }: ToolCallTraceP
             <div
               key={`${w}-${i}`}
               role="alert"
-              className="flex items-center gap-2 rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200"
+              className="flex items-center gap-2 rounded-md border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[13px] text-amber-200"
             >
-              <AlertTriangle size={16} className="shrink-0" />
-              <span className="font-mono">{w}</span>
+              <AlertTriangle size={15} className="shrink-0" />
+              <span className="font-mono text-[11.5px]">{w}</span>
             </div>
           ))}
         </div>
@@ -120,12 +129,19 @@ export function ToolCallTrace({ toolCalls, warnings, elapsedMs }: ToolCallTraceP
 
       {toolCalls.length > 0 && (
         <>
-          <div className="text-xs text-muted">
-            {formatElapsed(elapsedMs)} · {toolCalls.length} {plural} fired
+          <div className="flex items-baseline justify-between">
+            <div className="eyebrow">Reasoning trail</div>
+            <div className="font-mono text-[11.5px] text-[var(--color-text-soft)]">
+              <span className="tabular-nums">{formatElapsed(elapsedMs)}</span>
+              <span className="mx-1.5 text-[var(--color-muted)]">·</span>
+              <span>
+                {toolCalls.length} {plural} fired
+              </span>
+            </div>
           </div>
           <div className="space-y-2">
             {toolCalls.map((call, i) => (
-              <ToolCard key={`${call.tool}-${i}`} call={call} />
+              <ToolCard key={`${call.tool}-${i}`} call={call} index={i} />
             ))}
           </div>
         </>

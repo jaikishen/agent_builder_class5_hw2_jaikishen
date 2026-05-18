@@ -14,6 +14,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 
 from backend.schemas import ChatResponse, ToolCall
+from backend.tools.handbook_search import handbook_search
 from backend.tools.mongo_query import mongo_query
 from backend.tools.sql_query import sql_query
 
@@ -24,7 +25,7 @@ _MAX_ITERATIONS_FALLBACK = (
 
 SYSTEM_PROMPT = """You are a SkyNova Airlines analyst. Today is 2026-05-08.
 
-You have two tools available:
+You have three tools available:
 
 - sql_query(sql: str) → JSON. Read-only SELECT against Supabase Postgres.
   Returns a wrapper dict: {rows, truncated, shown, total}. Multi-statements,
@@ -39,8 +40,19 @@ You have two tools available:
   $where (server-side JS) is blocked. Operations: "find", "aggregate",
   "count_documents".
 
-Route by data location: relational facts (customers/flights/bookings/airports/
-aircraft) → sql_query. Tickets / reviews / activity logs → mongo_query.
+- handbook_search(query: str, k: int = 4) → JSON. Semantic search over the
+  SkyNova passenger handbook (baggage, refunds, delays, loyalty, pets,
+  special assistance, boarding, check-in, in-flight, contact). Returns top-k
+  chunks with `{content, section, similarity}` per row. Use this for ANY
+  policy / how-do-I / what-is-allowed question.
+
+Route by question type:
+  - Counting, joining, summing relational facts (customers, flights, bookings,
+    airports, aircraft) → sql_query.
+  - Tickets, reviews, activity logs → mongo_query.
+  - Policies, allowances, rules, how-tos → handbook_search.
+  - Multi-part questions may need 2 or 3 tools in one ReAct loop — call them
+    in any order, then synthesize the answer.
 
 ## SQL schema (5 tables, all in `public`)
 
@@ -116,6 +128,14 @@ Q: Tickets tagged for flight SN301.
 A: mongo_query(collection="support_tickets", operation="find",
    filter={"tags": "SN301"})
 
+## Example handbook queries
+
+Q: What is our pet travel policy?
+A: handbook_search(query="pet travel policy", k=4)
+
+Q: What is the delay compensation policy?
+A: handbook_search(query="delay compensation", k=4)
+
 After any tool returns, read the JSON `rows` and answer in plain English —
 concise, no raw query syntax in the final answer unless the user explicitly
 asked for it. If a tool returns "REFUSED: ..." or "ERROR: ...", read the
@@ -135,7 +155,9 @@ def build_agent(model: BaseChatModel | None = None) -> Any:
     if model is None:
         model = _build_model()
     return create_agent(
-        model, tools=[sql_query, mongo_query], system_prompt=SYSTEM_PROMPT,
+        model,
+        tools=[sql_query, mongo_query, handbook_search],
+        system_prompt=SYSTEM_PROMPT,
     )
 
 

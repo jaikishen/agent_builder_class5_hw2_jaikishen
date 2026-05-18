@@ -34,3 +34,16 @@ def test_group_by_returns_grouped_rows():
     tiers = {row["loyalty_tier"] for row in data["rows"]}
     assert tiers, "no tiers returned"
     assert sum(row["n"] for row in data["rows"]) == 25
+
+
+def test_postgres_error_is_returned_as_string():
+    """When the SQL is syntactically valid but Postgres rejects it (e.g. unknown
+    column), sql_query must return an ERROR string so the agent can react and
+    retry — never raise out of the tool."""
+    from backend.tools.sql_query import sql_query
+
+    result = sql_query.invoke({"sql": "SELECT nonexistent_col FROM customers"})
+
+    assert isinstance(result, str)
+    assert result.startswith("ERROR:"), f"expected ERROR string, got: {result!r}"
+    assert "nonexistent_col" in result or "does not exist" in result.lower()

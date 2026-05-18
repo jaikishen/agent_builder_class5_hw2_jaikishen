@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import re
 
+import psycopg
 from langchain_core.tools import tool
 
 from backend.db import get_pg_conn
@@ -102,10 +103,15 @@ def sql_query(sql: str) -> str:
 
     settings = get_settings()
     safe_sql = _apply_limit(stripped, default=settings.sql_default_limit)
-    with get_pg_conn() as conn, conn.cursor() as cur:
-        cur.execute(f"SET LOCAL statement_timeout = {int(settings.sql_timeout_ms)}")
-        cur.execute(safe_sql)
-        rows = cur.fetchall()
+    try:
+        with get_pg_conn() as conn, conn.cursor() as cur:
+            cur.execute(f"SET LOCAL statement_timeout = {int(settings.sql_timeout_ms)}")
+            cur.execute(safe_sql)
+            rows = cur.fetchall()
+    except psycopg.Error as exc:
+        # Surface DB errors as tool output so the agent can adjust its query,
+        # rather than crashing the ReAct loop.
+        return f"ERROR: {type(exc).__name__}: {str(exc).strip()}"
 
     wrapped = _truncate(rows, max_rows=50, max_bytes=8192)
     return json.dumps(wrapped, default=str)

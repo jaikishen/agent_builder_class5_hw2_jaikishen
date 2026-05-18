@@ -16,5 +16,7 @@ wheels/
 
 # Local planning notes (not tracked)
 implementation_plan.md
+implementation_phased_plan.md
 phase1.md
+phase2.md
 

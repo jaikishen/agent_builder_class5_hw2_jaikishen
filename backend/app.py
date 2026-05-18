@@ -10,12 +10,14 @@ import time
 import uuid
 from contextvars import ContextVar
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from langchain_core.language_models import BaseChatModel
 
 from settings import get_settings
 
+from backend.agent import run_agent
 from backend.schemas import ChatRequest, ChatResponse
 
 logger = logging.getLogger("skynova")
@@ -59,14 +61,21 @@ async def request_id_middleware(request: Request, call_next):
     return response
 
 
+def get_model() -> BaseChatModel:
+    """Dependency that returns the chat model. Overridden in tests with a fake."""
+    from langchain_openai import ChatOpenAI
+    return ChatOpenAI(
+        model=settings.model_name,
+        api_key=settings.openai_api_key,
+        temperature=0,
+    )
+
+
 @app.get("/health")
 def health() -> dict:
     return {"ok": True}
 
 
 @app.post("/chat", response_model=ChatResponse)
-def chat(req: ChatRequest) -> ChatResponse:
-    start = time.perf_counter()
-    answer = f"[stub] received: {req.message!r}. Agent not wired yet (phase 2)."
-    elapsed_ms = int((time.perf_counter() - start) * 1000)
-    return ChatResponse(answer=answer, tool_calls=[], warnings=[], elapsed_ms=elapsed_ms)
+def chat(req: ChatRequest, model: BaseChatModel = Depends(get_model)) -> ChatResponse:
+    return run_agent(req.message, model=model)

@@ -13,7 +13,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 
-from backend.schemas import ChatResponse, ToolCall
+from backend.schemas import ChatMessage, ChatResponse, ToolCall
 from backend.tools.handbook_search import handbook_search
 from backend.tools.mongo_query import mongo_query
 from backend.tools.sql_query import sql_query
@@ -203,13 +203,28 @@ def _final_answer(messages: list) -> str:
     return ""
 
 
+def _history_to_messages(history: list[ChatMessage] | None) -> list:
+    """Convert API ChatMessage entries into LangChain message objects."""
+    if not history:
+        return []
+    out: list = []
+    for h in history:
+        if h.role == "user":
+            out.append(HumanMessage(content=h.content))
+        elif h.role == "assistant":
+            out.append(AIMessage(content=h.content))
+    return out
+
+
 def run_agent(
     message: str,
     *,
     model: BaseChatModel | None = None,
     max_iterations: int | None = None,
+    history: list[ChatMessage] | None = None,
 ) -> ChatResponse:
-    """Run one turn of the ReAct agent against `message`.
+    """Run one turn of the ReAct agent against `message`, with optional
+    prior-turn history so the agent can resolve follow-up questions.
 
     `max_iterations` caps the number of ReAct loop turns. When exceeded, the
     response carries a `max_iterations_reached` warning and a graceful answer
@@ -226,10 +241,13 @@ def run_agent(
     agent = build_agent(model=model)
     warnings: list[str] = []
 
+    # Build the message list: prior turns first, then the new user message.
+    messages_in = _history_to_messages(history) + [HumanMessage(content=message)]
+
     start = time.perf_counter()
     try:
         result = agent.invoke(
-            {"messages": [HumanMessage(content=message)]},
+            {"messages": messages_in},
             config={"recursion_limit": recursion_limit},
         )
         messages = result.get("messages", [])
@@ -240,9 +258,13 @@ def run_agent(
         answer = _MAX_ITERATIONS_FALLBACK
     elapsed_ms = int((time.perf_counter() - start) * 1000)
 
+    # Filter out tool calls that came from the history's AIMessages —
+    # we only want to surface tool calls fired by THIS turn.
+    new_messages = messages[len(messages_in) - 1:] if messages else []
+
     return ChatResponse(
         answer=answer,
-        tool_calls=_extract_tool_calls(messages),
+        tool_calls=_extract_tool_calls(new_messages),
         warnings=warnings,
         elapsed_ms=elapsed_ms,
     )

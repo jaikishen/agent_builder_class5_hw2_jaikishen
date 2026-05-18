@@ -1,4 +1,4 @@
-import type { ChatResponse } from '../types/api'
+import type { ChatMessage, ChatResponse } from '../types/api'
 
 export class ChatApiError extends Error {
   status: number
@@ -15,11 +15,12 @@ export class ChatApiError extends Error {
 export async function postChat(
   message: string,
   signal?: AbortSignal,
+  history?: ChatMessage[],
 ): Promise<ChatResponse> {
   const res = await fetch('/chat', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, history: history ?? [] }),
     signal,
   })
   if (!res.ok) {

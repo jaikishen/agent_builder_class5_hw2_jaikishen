@@ -78,4 +78,4 @@ def health() -> dict:
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest, model: BaseChatModel = Depends(get_model)) -> ChatResponse:
-    return run_agent(req.message, model=model)
+    return run_agent(req.message, model=model, history=req.history)

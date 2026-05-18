@@ -39,7 +39,7 @@ Single source questions are also fair game:
 
 1. Langchain V1 docs - refer the latest one always; 
 2. FastAPI service to wrap agent in API; 
-3. Create a React UI - use 
+3. Create a React UI - infer design and color pattern of Supabase website. 
 4. No Auth needed right now. 
 Ensure to use Superpowers
 
@@ -61,23 +61,48 @@ Ensure to use Superpowers
 * The UI must show three things: the user's question, the agent's final answer, and the tool call trace (which tool was called, with what arguments, and what came back).
 * No auth required. No streaming required. No multi-turn memory required. Single turn is fine.
 
-Models
+# Models
 	OpenAI gpt-4o-mini (chat)
     text-embedding-3-small (RAG)
 
-Data	
+# Data source	
 * Supabase Postgres (5 seed tables, ~103 rows) 
 * MongoDB Atlas (3 seed collections, 87 docs) 
 * pgvector documents table (31 handbook chunks)
 
 
-Tests
+# Tests
 * pytest, organized into unit/, integration/, and e2e/ folders. 
 * pytest-cov · 
 * Mock the LLM at the unit level. LangChain's GenericFakeChatModel works well for this (unit level mocking)
 * At least one e2e test that runs a real question through the full agent loop.
 
-Reference architecture
+I want to be able to :
+
+uv run pytest tests/unit                           # ~1s, no DB, no LLM
+uv run pytest tests/unit tests/integration         # ~6s, live DB, mocked LLM
+RUN_E2E=1 uv run pytest                            # ~45s, live DB + live OpenAI
+RUN_E2E=1 uv run pytest --cov=. --cov-report=term  # with coverage report
+
+Example-
+
+| Layer | Speed | DB | LLM | When |
+| unit | <1 s | mocked | LangChain fake chat | every run |
+| integration | ~6 s | live | mocked / none | every run |
+| e2e | ~25-45 s | live | live gpt-4o-mini | only with RUN_E2E=1 |
+
+
+E2E tests should cover the five worked questions from the design brief — compensation, cancellation, loyalty, special-assistance, and ratings-aggregation. Each should assert the expected tools fired (not just that an answer came back) so a regression in tool routing fails the test.
+
+Example-
+
+| File| Statements | Missed | Cover | 
+| tools/sql_tool.py | 50 | 6 | 88 % | 
+| tools/mongo_tool.py | 65 | 6 | 91 % | 
+| tools/rag_tool.py | 26 | 3 | 88 % | 
+| app.py | 92 | 8 | 91 % | 
+
+# Reference architecture
 Browser -> React UI -> FastAPI -> LangChain v1 ReAct agent -> [sql_query | mongo_query | handbook_search] -> live store
 The agent never connects to the data stores directly. Every read goes through one of the three typed tools. 
 

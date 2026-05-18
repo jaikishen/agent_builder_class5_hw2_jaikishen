@@ -6,9 +6,15 @@ dist/
 wheels/
 *.egg-info
 
+
+.claude/
 # Virtual environments
 .venv
 
 # Local secrets
 .env
+
+# Local planning notes (not tracked)
+implementation_plan.md
+phase1.md
 

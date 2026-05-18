@@ -1,24 +1,42 @@
+import { ChatInput } from './components/ChatInput'
+import { useChat } from './hooks/useChat'
+
 function App() {
+  const { state, response, error, send } = useChat()
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6">
-      <div className="max-w-2xl text-center">
-        <h1 className="text-5xl font-semibold tracking-tight text-brand">
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-6 py-10">
+      <header className="text-center">
+        <h1 className="text-4xl font-semibold tracking-tight text-brand">
           SkyNova Airlines Agent
         </h1>
-        <p className="mt-4 text-base text-muted">
-          Ask anything about passengers, flights, bookings, support tickets, reviews,
-          or our handbook policies. The agent routes each question to the right
-          tool and shows its work.
-        </p>
-        <p className="mt-8 font-mono text-sm text-muted">
-          Phase F0 scaffold &middot; backend at{" "}
-          <code className="rounded bg-surface px-1 py-0.5 text-brand">
+        <p className="mt-2 text-sm text-muted">
+          Phase F1 wiring &middot; backend at{" "}
+          <code className="rounded bg-surface px-1 py-0.5 font-mono text-brand">
             localhost:8000
           </code>
         </p>
-      </div>
+      </header>
+
+      <ChatInput onSubmit={send} disabled={state === 'loading'} />
+
+      {state === 'loading' && (
+        <p className="text-center text-muted">Thinking…</p>
+      )}
+
+      {state === 'error' && error && (
+        <pre className="overflow-x-auto rounded-md border border-red-500/40 bg-red-500/10 p-3 font-mono text-sm text-red-300">
+          {error.message}
+        </pre>
+      )}
+
+      {response && (
+        <pre className="overflow-x-auto rounded-md border border-white/10 bg-surface p-3 font-mono text-xs text-text">
+          {JSON.stringify(response, null, 2)}
+        </pre>
+      )}
     </main>
-  );
+  )
 }
 
-export default App;
+export default App

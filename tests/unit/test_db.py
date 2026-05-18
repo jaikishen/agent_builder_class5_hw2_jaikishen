@@ -30,6 +30,36 @@ def test_parse_pg_url_defaults_port_and_dbname():
     assert kw["dbname"] == "postgres"
 
 
+def test_get_mongo_db_uses_settings_db(monkeypatch):
+    """get_mongo_db() returns the database named by settings.mongodb_db and
+    constructs MongoClient with settings.mongodb_uri. Module-level cached."""
+    from backend import db
+
+    captured: dict = {}
+
+    class _FakeDB:
+        def __init__(self, name):
+            self.name = name
+
+    class _FakeClient:
+        def __init__(self, uri, **kwargs):
+            captured["uri"] = uri
+            captured["kwargs"] = kwargs
+
+        def __getitem__(self, name):
+            return _FakeDB(name)
+
+    # Reset module cache, swap in fake
+    monkeypatch.setattr(db, "_mongo_client", None, raising=False)
+    monkeypatch.setattr(db, "MongoClient", _FakeClient)
+
+    out = db.get_mongo_db()
+
+    assert isinstance(out, _FakeDB)
+    assert out.name == "skynova"  # comes from .env (settings.mongodb_db)
+    assert captured["uri"].startswith("mongodb+srv://")
+
+
 def test_get_pg_conn_uses_dict_row_factory(monkeypatch):
     """get_pg_conn must pass row_factory=dict_row so we get dict rows back.
 

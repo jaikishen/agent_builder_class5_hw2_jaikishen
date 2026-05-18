@@ -14,6 +14,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 
 from backend.schemas import ChatResponse, ToolCall
+from backend.tools.mongo_query import mongo_query
 from backend.tools.sql_query import sql_query
 
 _MAX_ITERATIONS_FALLBACK = (
@@ -23,12 +24,23 @@ _MAX_ITERATIONS_FALLBACK = (
 
 SYSTEM_PROMPT = """You are a SkyNova Airlines analyst. Today is 2026-05-08.
 
-You have one tool available:
+You have two tools available:
+
 - sql_query(sql: str) → JSON. Read-only SELECT against Supabase Postgres.
   Returns a wrapper dict: {rows, truncated, shown, total}. Multi-statements,
   writes, and dangerous keywords are refused (you'll get a "REFUSED: ..."
   string). Postgres errors come back as "ERROR: ..." strings — read them
   and adjust your query.
+
+- mongo_query(collection, operation, filter, projection, pipeline, sort, limit)
+  → JSON. Read-only query against MongoDB Atlas. Same wrapper dict shape.
+  Allowed collections: support_tickets, flight_reviews, user_activity_logs.
+  Allowed aggregation stages: $match, $group, $sort, $limit, $project.
+  $where (server-side JS) is blocked. Operations: "find", "aggregate",
+  "count_documents".
+
+Route by data location: relational facts (customers/flights/bookings/airports/
+aircraft) → sql_query. Tickets / reviews / activity logs → mongo_query.
 
 ## SQL schema (5 tables, all in `public`)
 
@@ -66,8 +78,48 @@ A: SELECT f.flight_number, f.departure_time, COUNT(b.booking_id) AS affected
    FROM flights f LEFT JOIN bookings b ON b.flight_id = f.flight_id
    WHERE f.status = 'Cancelled' GROUP BY f.flight_id, f.flight_number, f.departure_time;
 
-After sql_query returns, read the JSON `rows` and answer in plain English —
-concise, no SQL in the final answer unless the user explicitly asked for it.
+## MongoDB collections (3 of them in db `skynova`)
+
+`support_tickets` — passenger cases with threaded messages.
+  Fields: ticket_id, customer_id (→ SQL customers.customer_id),
+  booking_reference (→ SQL bookings.booking_reference, may be null),
+  category ∈ {Refund, Complaint, Baggage, Loyalty, SpecialAssistance,
+  FlightChange, Other}, priority ∈ {Low, Medium, High},
+  status ∈ {Open, InProgress, Resolved}, subject, tags (string[],
+  often includes flight number like "SN401"), resolution (only when
+  Resolved), created_at, updated_at, messages[{from, at, text}].
+
+`flight_reviews` — post-flight ratings.
+  Fields: review_id, customer_id, flight_number (use this, not flight_id),
+  booking_reference, rating (1-5), verified_passenger, aspects.{seat, food,
+  crew, entertainment, punctuality}, title, comment, posted_at.
+
+`user_activity_logs` — heterogeneous event stream.
+  Fields: log_id, customer_id, event_type, device, session_id, timestamp,
+  data (shape varies by event_type).
+
+## Example MongoDB queries
+
+Q: List all open support tickets.
+A: mongo_query(collection="support_tickets", operation="find",
+   filter={"status":"Open"})
+
+Q: Average rating per flight, lowest first.
+A: mongo_query(collection="flight_reviews", operation="aggregate",
+   pipeline=[
+     {"$group": {"_id": "$flight_number", "avg": {"$avg": "$rating"},
+                 "n": {"$sum": 1}}},
+     {"$sort": {"avg": 1}}
+   ])
+
+Q: Tickets tagged for flight SN301.
+A: mongo_query(collection="support_tickets", operation="find",
+   filter={"tags": "SN301"})
+
+After any tool returns, read the JSON `rows` and answer in plain English —
+concise, no raw query syntax in the final answer unless the user explicitly
+asked for it. If a tool returns "REFUSED: ..." or "ERROR: ...", read the
+reason and adjust the query (e.g. fix a column name, narrow the filter).
 """
 
 
@@ -82,7 +134,9 @@ def build_agent(model: BaseChatModel | None = None) -> Any:
     """Return a compiled LangGraph ReAct agent bound to the SkyNova tools."""
     if model is None:
         model = _build_model()
-    return create_agent(model, tools=[sql_query], system_prompt=SYSTEM_PROMPT)
+    return create_agent(
+        model, tools=[sql_query, mongo_query], system_prompt=SYSTEM_PROMPT,
+    )
 
 
 def _extract_tool_calls(messages: list) -> list[ToolCall]:

@@ -12,6 +12,9 @@ from urllib.parse import unquote, urlparse
 
 import psycopg
 from psycopg.rows import dict_row
+from pymongo import MongoClient
+
+_mongo_client: MongoClient | None = None
 
 
 def _parse_pg_url(url: str) -> dict:
@@ -43,3 +46,17 @@ def get_pg_conn(url: str | None = None) -> Iterator[psycopg.Connection]:
     kwargs = _parse_pg_url(url)
     with psycopg.connect(row_factory=dict_row, **kwargs) as conn:
         yield conn
+
+
+def get_mongo_db():
+    """Return the SkyNova MongoDB database, lazily caching the client.
+
+    Module-level cached because pymongo.MongoClient is thread-safe and is
+    designed to be reused across the process.
+    """
+    global _mongo_client
+    from settings import get_settings
+    s = get_settings()
+    if _mongo_client is None:
+        _mongo_client = MongoClient(s.mongodb_uri, serverSelectionTimeoutMS=5000)
+    return _mongo_client[s.mongodb_db]

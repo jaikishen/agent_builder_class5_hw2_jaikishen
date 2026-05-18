@@ -83,4 +83,42 @@ describe('useChat', () => {
     expect(result.current.response).toBeNull()
     expect(result.current.error).toBeNull()
   })
+
+  it('retry() re-sends the previous message', async () => {
+    const { useChat } = await import('./useChat')
+    const { result } = renderHook(() => useChat())
+
+    act(() => { result.current.send('alpha') })
+    await waitFor(() => expect(result.current.state).toBe('success'))
+    expect(result.current.response?.answer).toBe('echo: alpha')
+
+    act(() => { result.current.retry() })
+    expect(result.current.state).toBe('loading')
+
+    await waitFor(() => expect(result.current.state).toBe('success'))
+    expect(result.current.response?.answer).toBe('echo: alpha')
+  })
+
+  it('retry() is a no-op when nothing has been sent', async () => {
+    const { useChat } = await import('./useChat')
+    const { result } = renderHook(() => useChat())
+
+    act(() => { result.current.retry() })
+    expect(result.current.state).toBe('idle')
+    expect(result.current.response).toBeNull()
+    expect(result.current.error).toBeNull()
+  })
+
+  it('reset() clears lastMessage so retry is a no-op afterward', async () => {
+    const { useChat } = await import('./useChat')
+    const { result } = renderHook(() => useChat())
+
+    act(() => { result.current.send('alpha') })
+    await waitFor(() => expect(result.current.state).toBe('success'))
+
+    act(() => { result.current.reset() })
+    act(() => { result.current.retry() })
+    expect(result.current.state).toBe('idle')
+    expect(result.current.response).toBeNull()
+  })
 })

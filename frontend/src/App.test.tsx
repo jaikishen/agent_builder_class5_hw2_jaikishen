@@ -67,4 +67,93 @@ describe('App (Phase F1 wiring)', () => {
     // Card header text mentions sql_query.
     expect(screen.getByRole('button', { name: /sql_query/i })).toBeInTheDocument()
   })
+
+  it('shows the loading spinner while a request is in flight', async () => {
+    const { http, HttpResponse, delay } = await import('msw')
+    const { server } = await import('./test/server')
+    server.use(
+      http.post('*/chat', async () => {
+        await delay(150)
+        return HttpResponse.json({
+          answer: 'late', tool_calls: [], warnings: [], elapsed_ms: 1,
+        })
+      }),
+    )
+
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByRole('textbox'), 'hi{Enter}')
+
+    // Spinner appears mid-flight.
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent(/thinking/i)
+
+    // Then resolves and spinner is gone.
+    await waitFor(() => expect(screen.getByText(/late/)).toBeInTheDocument())
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('shows the error banner with a working Retry button on failure', async () => {
+    const { http, HttpResponse } = await import('msw')
+    const { server } = await import('./test/server')
+
+    let firstCall = true
+    server.use(
+      http.post('*/chat', () => {
+        if (firstCall) {
+          firstCall = false
+          return HttpResponse.json({ error: 'boom' }, { status: 500 })
+        }
+        return HttpResponse.json({
+          answer: 'recovered',
+          tool_calls: [],
+          warnings: [],
+          elapsed_ms: 1,
+        })
+      }),
+    )
+
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByRole('textbox'), 'hi{Enter}')
+
+    // First attempt → error banner with Retry.
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument())
+    const retry = screen.getByRole('button', { name: /retry/i })
+
+    // Click Retry → second attempt resolves → answer renders, banner gone.
+    await user.click(retry)
+    await waitFor(() => expect(screen.getByText(/recovered/)).toBeInTheDocument())
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('renders the empty state chips before the first submit, and clicking a chip sends it', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    // Empty state visible — one canonical chip is present.
+    const chip = screen.getByRole('button', { name: /Platinum customers/i })
+    expect(chip).toBeInTheDocument()
+
+    await user.click(chip)
+
+    // Response renders → chips gone, answer present.
+    await waitFor(() =>
+      expect(screen.getByText(/echo: How many Platinum customers/i)).toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('button', { name: /Platinum customers/i })).not.toBeInTheDocument()
+  })
+
+  it('answer container is aria-live polite for screen readers', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.type(screen.getByRole('textbox'), 'hi{Enter}')
+
+    await waitFor(() => expect(screen.getByText(/echo: hi/)).toBeInTheDocument())
+
+    // Find any ancestor of the answer text with aria-live="polite".
+    const answer = screen.getByText(/echo: hi/)
+    const live = answer.closest('[aria-live="polite"]')
+    expect(live).not.toBeNull()
+  })
 })

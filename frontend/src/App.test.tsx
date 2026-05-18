@@ -14,18 +14,23 @@ describe('App (Phase F1 wiring)', () => {
     expect(screen.getByRole('button', { name: /send/i })).toBeInTheDocument()
   })
 
-  it('shows the raw JSON envelope after a successful submit', async () => {
+  it('renders the answer text after a successful submit (not raw JSON)', async () => {
     const user = userEvent.setup()
     render(<App />)
 
     await user.type(screen.getByRole('textbox'), 'hi{Enter}')
 
+    // Answer text appears as rendered markdown, not inside a JSON <pre>.
     await waitFor(() => {
-      // The raw JSON viewer is the only <pre>; it should contain the echo payload.
-      const pre = document.querySelector('pre')
-      expect(pre).not.toBeNull()
-      expect(pre!.textContent).toContain('"answer"')
-      expect(pre!.textContent).toContain('echo: hi')
+      expect(screen.getByText(/echo: hi/)).toBeInTheDocument()
     })
+
+    // No <pre> wrapping a serialized envelope (no `"answer":` substring anywhere
+    // in a pre tag). Fenced code blocks inside a real answer would still be
+    // allowed; this just rules out the F1 raw-JSON viewer.
+    const pres = document.querySelectorAll('pre')
+    for (const pre of pres) {
+      expect(pre.textContent ?? '').not.toContain('"answer":')
+    }
   })
 })

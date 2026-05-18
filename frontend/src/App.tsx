@@ -1,3 +1,4 @@
+import { AnswerDisplay } from './components/AnswerDisplay'
 import { ChatInput } from './components/ChatInput'
 import { useChat } from './hooks/useChat'
 
@@ -11,7 +12,7 @@ function App() {
           SkyNova Airlines Agent
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Phase F1 wiring &middot; backend at{" "}
+          Phase F2 wiring &middot; backend at{" "}
           <code className="rounded bg-surface px-1 py-0.5 font-mono text-brand">
             localhost:8000
           </code>
@@ -31,9 +32,9 @@ function App() {
       )}
 
       {response && (
-        <pre className="overflow-x-auto rounded-md border border-white/10 bg-surface p-3 font-mono text-xs text-text">
-          {JSON.stringify(response, null, 2)}
-        </pre>
+        <article className="rounded-md border border-white/10 bg-surface/40 p-4">
+          <AnswerDisplay markdown={response.answer} />
+        </article>
       )}
     </main>
   )

@@ -1,5 +1,6 @@
 import { AnswerDisplay } from './components/AnswerDisplay'
 import { ChatInput } from './components/ChatInput'
+import { ToolCallTrace } from './components/ToolCallTrace'
 import { useChat } from './hooks/useChat'
 
 function App() {
@@ -12,7 +13,7 @@ function App() {
           SkyNova Airlines Agent
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Phase F2 wiring &middot; backend at{" "}
+          Phase F3 wiring &middot; backend at{" "}
           <code className="rounded bg-surface px-1 py-0.5 font-mono text-brand">
             localhost:8000
           </code>
@@ -32,9 +33,16 @@ function App() {
       )}
 
       {response && (
-        <article className="rounded-md border border-white/10 bg-surface/40 p-4">
-          <AnswerDisplay markdown={response.answer} />
-        </article>
+        <>
+          <article className="rounded-md border border-white/10 bg-surface/40 p-4">
+            <AnswerDisplay markdown={response.answer} />
+          </article>
+          <ToolCallTrace
+            toolCalls={response.tool_calls}
+            warnings={response.warnings}
+            elapsedMs={response.elapsed_ms}
+          />
+        </>
       )}
     </main>
   )

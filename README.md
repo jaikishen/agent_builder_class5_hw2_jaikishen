@@ -40,7 +40,7 @@
 ### 1. Clone
 
 ```bash
-git clone https://github.com/<your-user>/skynova-airlines-agent.git
+git clone https://github.com/jaikishen/agent_builder_class5_hw2_jaikishen
 cd skynova-airlines-agent
 ```
 
